@@ -1,0 +1,48 @@
+import { spawnCancellable } from '../bridge';
+import { getModelForTask, getApiKeyForTask } from '../config';
+import { getEmbeddingProviderByName, resolveProviderConfig } from '../providers/registry';
+
+export async function embedBatch(texts: string[]): Promise<(number[] | null)[]> {
+  if (texts.length === 0) return [];
+
+  const modelConfig = getModelForTask('embedding');
+  if (modelConfig === null) return texts.map(() => null);
+
+  if (modelConfig.provider !== 'ollama') {
+    const apiKey = getApiKeyForTask('embedding');
+    if (apiKey === '') return texts.map(() => null);
+  }
+
+  const provider = getEmbeddingProviderByName(modelConfig.provider);
+  if (provider === null) return texts.map(() => null);
+
+  const providerConfig = resolveProviderConfig(modelConfig, provider);
+  if (providerConfig === null) return texts.map(() => null);
+
+  const request = {
+    input: texts,
+    model: providerConfig.model,
+  };
+
+  const shellCommand = provider.buildShellCommand(request, providerConfig);
+
+  try {
+    const handle = await spawnCancellable(shellCommand);
+    const result = await handle.wait();
+
+    if (result.exitCode !== 0) return texts.map(() => null);
+
+    const response = provider.parseResponse(result.stdout);
+    if (response === null) return texts.map(() => null);
+
+    // Align response with input — pad with nulls if needed
+    return texts.map((_, i) => response.embeddings[i] ?? null);
+  } catch {
+    return texts.map(() => null);
+  }
+}
+
+export async function embed(text: string): Promise<number[] | null> {
+  const results = await embedBatch([text]);
+  return results[0] ?? null;
+}
