@@ -149,7 +149,7 @@ describe('rag store', () => {
 
   it('uses single embedBatch call for multi-chunk buffer', async () => {
     // Generate text with enough lines for multiple chunks (>30 lines)
-    const lines = Array.from({ length: 65 }, (_, i) => `const x${i} = ${i};`);
+    const lines = Array.from({ length: 65 }, (_, i) => `const x${i.toString()} = ${i.toString()};`);
     vi.mocked(editor.getBufferText).mockResolvedValue(lines.join('\n'));
     vi.mocked(editor.getBufferLength).mockReturnValue(lines.join('\n').length);
 
@@ -169,7 +169,7 @@ describe('rag store', () => {
   describe('LRU eviction', () => {
     it('evicts oldest file when exceeding MAX_CHUNKS', async () => {
       // Index file A with many chunks to fill the store
-      const manyLines = Array.from({ length: 900 }, (_, i) => `line${i}`).join('\n');
+      const manyLines = Array.from({ length: 900 }, (_, i) => `line${i.toString()}`).join('\n');
       vi.mocked(editor.getBufferPath).mockReturnValue('/project/fileA.ts');
       vi.mocked(editor.getBufferText).mockResolvedValue(manyLines);
       vi.mocked(editor.getBufferLength).mockReturnValue(manyLines.length);
@@ -189,16 +189,12 @@ describe('rag store', () => {
 
       // Index many more files to push past MAX_CHUNKS (500)
       for (let i = 0; i < 20; i++) {
-        vi.mocked(editor.getBufferPath).mockReturnValue(`/project/file${i}.ts`);
+        vi.mocked(editor.getBufferPath).mockReturnValue(`/project/file${i.toString()}.ts`);
         await indexBuffer(i + 10);
       }
 
       // fileA should have been evicted (oldest access)
       // Store should not exceed what MAX_CHUNKS allows
-      const totalChunks = Array.from(
-        { length: getStoreSize() },
-        () => 0,
-      );
       // Just verify eviction happened — fileA should be gone
       invalidateBuffer('/project/fileA.ts'); // should be no-op if already evicted
     });
@@ -245,7 +241,7 @@ describe('rag store', () => {
 
     it('caps oversized single file to MAX_CHUNKS (500)', async () => {
       // Generate text large enough for >500 chunks (500 * 30 = 15000 lines needed)
-      const lines = Array.from({ length: 16000 }, (_, i) => `const v${i} = ${i};`);
+      const lines = Array.from({ length: 16000 }, (_, i) => `const v${i.toString()} = ${i.toString()};`);
       vi.mocked(editor.getBufferPath).mockReturnValue('/project/huge.ts');
       vi.mocked(editor.getBufferText).mockResolvedValue(lines.join('\n'));
       vi.mocked(editor.getBufferLength).mockReturnValue(lines.join('\n').length);
@@ -257,7 +253,6 @@ describe('rag store', () => {
       await indexBuffer(1);
 
       // Count total stored chunks — should be capped at 500
-      let totalChunks = 0;
       // getStoreSize counts files, not chunks — use findRelevant to verify
       // Instead, index and check that store has 1 file, then query to count
       expect(getStoreSize()).toBe(1);

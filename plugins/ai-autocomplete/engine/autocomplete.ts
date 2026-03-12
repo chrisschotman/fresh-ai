@@ -87,7 +87,7 @@ export async function triggerCompletion(): Promise<void> {
     const relevantChunks = await findRelevant(context.prefix, 3);
     if (relevantChunks.length > 0) {
       ragContext = relevantChunks
-        .map((c) => `// ${c.filePath}:${c.startLine}-${c.endLine}\n${c.content}`)
+        .map((c) => `// ${c.filePath}:${c.startLine.toString()}-${c.endLine.toString()}\n${c.content}`)
         .join('\n\n');
     }
   } catch {
