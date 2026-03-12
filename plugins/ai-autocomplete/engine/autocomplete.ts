@@ -1,4 +1,4 @@
-import { spawnCancellable } from '../bridge';
+import { spawnCancellable, cleanupAllProcesses } from '../bridge';
 import { getConfig, getModelForTask, getApiKeyForTask, isExtensionDisabled } from '../config';
 import { gatherContext } from './context';
 import { showGhostText, clearGhostText, hasSuggestion } from './suggestion';
@@ -194,5 +194,12 @@ export async function dismiss(): Promise<void> {
     clearGhostText(bufferId);
   }
   await cancelActiveRequest();
+  setState('idle');
+}
+
+export async function shutdown(): Promise<void> {
+  requestId++;
+  await cancelActiveRequest();
+  await cleanupAllProcesses();
   setState('idle');
 }

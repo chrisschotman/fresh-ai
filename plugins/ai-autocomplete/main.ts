@@ -1,5 +1,5 @@
 import { loadConfig, getConfig, getModelForTask, setEnabled } from './config';
-import { onBufferModified, triggerCompletion, dismiss } from './engine/autocomplete';
+import { onBufferModified, triggerCompletion, dismiss, shutdown } from './engine/autocomplete';
 import { acceptSuggestion, clearGhostText, hasSuggestion } from './engine/suggestion';
 import { indexBuffer, invalidateBuffer, initStore, clearStore, setContentHash } from './engine/rag';
 import { hashContent } from './engine/persistence';
@@ -40,7 +40,7 @@ globalThis.ai_autocomplete_toggle = async function (): Promise<void> {
   editor.setStatus(`AI Autocomplete: ${nowEnabled ? 'enabled' : 'disabled'}`);
 
   if (!nowEnabled) {
-    await dismiss();
+    await shutdown();
   }
 };
 

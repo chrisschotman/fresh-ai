@@ -41,17 +41,23 @@ export async function writeFile(path: string, content: string): Promise<boolean>
   return mvResult.exitCode === 0;
 }
 
+const KILL_TIMEOUT_MS = 2000;
+
+const activeProcesses = new Set<number>();
+
 export async function spawnCancellable(shellCommand: string): Promise<{
   processId: number;
   wait: () => Promise<HttpResult>;
   cancel: () => Promise<boolean>;
 }> {
   const { process_id } = await editor.spawnBackgroundProcess('sh', ['-c', shellCommand], '.');
+  activeProcesses.add(process_id);
 
   return {
     processId: process_id,
     wait: async (): Promise<HttpResult> => {
       const result = await editor.spawnProcessWait(process_id);
+      activeProcesses.delete(process_id);
       return {
         stdout: result.stdout,
         stderr: result.stderr,
@@ -59,6 +65,33 @@ export async function spawnCancellable(shellCommand: string): Promise<{
         processId: process_id,
       };
     },
-    cancel: (): Promise<boolean> => editor.killProcess(process_id),
+    cancel: async (): Promise<boolean> => {
+      const killed = await editor.killProcess(process_id);
+      if (!killed) {
+        // SIGTERM didn't work — wait then force kill
+        await editor.delay(KILL_TIMEOUT_MS);
+        try {
+          await editor.killProcess(process_id);
+        } catch {
+          // Process may have exited during the wait
+        }
+      }
+      activeProcesses.delete(process_id);
+      return killed;
+    },
   };
+}
+
+export async function cleanupAllProcesses(): Promise<void> {
+  const pids = Array.from(activeProcesses);
+  activeProcesses.clear();
+  await Promise.all(
+    pids.map(async (pid) => {
+      try {
+        await editor.killProcess(pid);
+      } catch {
+        // Process may have already exited
+      }
+    }),
+  );
 }
