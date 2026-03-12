@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- Autocomplete plugin for Fish shell powered by AI-generated suggestions
+- Autocomplete plugin for the Fresh editor powered by AI-generated suggestions
 - Partial suggestion acceptance with word-level and line-level granularity
 - Multi-line indentation intelligence for properly formatted suggestions
 - Config-hash based cache invalidation and `ai_clear_cache` command
