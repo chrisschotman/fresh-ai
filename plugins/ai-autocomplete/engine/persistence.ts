@@ -19,6 +19,7 @@ export interface PersistedStore {
   embeddingModel: string;
   embeddingProvider: string;
   embeddingDimension: number;
+  configHash?: string | undefined;
   timestamp: number;
   files: PersistedFile[];
 }
@@ -52,10 +53,20 @@ export function deserialize(json: string): PersistedStore | null {
   }
 }
 
+export function computeConfigHash(config: { model: string; provider: string; endpoint?: string }): string {
+  const key = `${config.provider}:${config.model}:${config.endpoint ?? ''}`;
+  return hashContent(key);
+}
+
 export function shouldInvalidateCache(
   cached: PersistedStore,
-  current: { model: string; provider: string },
+  current: { model: string; provider: string; endpoint?: string },
 ): boolean {
+  // Check config hash first (preferred)
+  if (cached.configHash !== undefined) {
+    return cached.configHash !== computeConfigHash(current);
+  }
+  // Fallback to legacy field comparison
   return cached.embeddingModel !== current.model || cached.embeddingProvider !== current.provider;
 }
 

@@ -92,6 +92,11 @@ globalThis.ai_autocomplete_buffer_saved = async function (): Promise<void> {
   }
 };
 
+globalThis.ai_clear_cache = function (): void {
+  clearStore();
+  editor.setStatus('AI: cache cleared');
+};
+
 globalThis.ai_reindex_workspace = async function (): Promise<void> {
   const config = getConfig();
   const embeddingModel = getModelForTask('embedding');
@@ -103,7 +108,7 @@ globalThis.ai_reindex_workspace = async function (): Promise<void> {
   clearStore();
 
   if (config.rag.persistCache) {
-    await initStore(embeddingModel.model, embeddingModel.provider, config.rag.saveDebounceSec);
+    await initStore(embeddingModel.model, embeddingModel.provider, config.rag.saveDebounceSec, embeddingModel.endpoint);
   }
 
   await indexWorkspace(config.rag, config.disabledExtensions);
@@ -119,7 +124,7 @@ async function init(): Promise<void> {
 
   // Initialize persistent store
   if (config.rag.persistCache && embeddingModel !== null) {
-    await initStore(embeddingModel.model, embeddingModel.provider, config.rag.saveDebounceSec);
+    await initStore(embeddingModel.model, embeddingModel.provider, config.rag.saveDebounceSec, embeddingModel.endpoint);
   }
 
   // Register event listeners
@@ -169,6 +174,8 @@ async function init(): Promise<void> {
   );
 
   editor.registerCommand('ai_reload_config', 'AI: Reload Config', 'ai_autocomplete_reload_config');
+
+  editor.registerCommand('ai_clear_cache', 'AI: Clear Cache', 'ai_clear_cache');
 
   editor.registerCommand(
     'ai_reindex_workspace',

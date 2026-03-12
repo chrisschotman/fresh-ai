@@ -5,6 +5,7 @@ import {
   loadStore as loadPersistedStore,
   writeStoreFile,
   shouldInvalidateCache,
+  computeConfigHash,
 } from './persistence';
 
 export interface CodeChunk {
@@ -24,7 +25,7 @@ let expectedDimension: number | null = null;
 const indexGeneration = new Map<string, number>();
 const contentHashes = new Map<string, string>();
 
-let persistMeta: { model: string; provider: string } | null = null;
+let persistMeta: { model: string; provider: string; endpoint?: string } | null = null;
 let saveDebounceSec = 30;
 let saveGeneration = 0;
 
@@ -87,6 +88,7 @@ function serializeStore(): PersistedStore {
     embeddingModel: persistMeta?.model ?? '',
     embeddingProvider: persistMeta?.provider ?? '',
     embeddingDimension: dimension,
+    configHash: persistMeta !== null ? computeConfigHash(persistMeta) : undefined,
     timestamp: Date.now(),
     files: Array.from(store.entries()).map(([filePath, chunks]) => ({
       filePath,
@@ -256,13 +258,15 @@ export async function initStore(
   model: string,
   provider: string,
   debounceSec?: number,
+  endpoint?: string,
 ): Promise<void> {
-  persistMeta = { model, provider };
+  persistMeta = endpoint !== undefined ? { model, provider, endpoint } : { model, provider };
   if (debounceSec !== undefined) saveDebounceSec = debounceSec;
 
   const persisted = await loadPersistedStore();
   if (persisted === null) return;
-  if (shouldInvalidateCache(persisted, { model, provider })) return;
+  const current = endpoint !== undefined ? { model, provider, endpoint } : { model, provider };
+  if (shouldInvalidateCache(persisted, current)) return;
 
   // Hydrate in-memory store from persisted data
   for (const file of persisted.files) {
