@@ -6,10 +6,15 @@ export interface HttpResult {
 }
 
 /**
- * Escape a string for use inside single quotes in a shell command.
- * Replaces ' with '\'' (end quote, escaped quote, start quote).
+ * Escape a string for safe use in a shell command.
+ * Wraps in single quotes and handles embedded single quotes via the
+ * standard '\'' technique (end quote, escaped quote, start quote).
+ * Also rejects null bytes which cannot be safely passed through shells.
  */
 export function shellEscape(str: string): string {
+  if (str.includes('\0')) {
+    throw new Error('shellEscape: input contains null byte');
+  }
   return "'" + str.replace(/'/g, "'\\''") + "'";
 }
 

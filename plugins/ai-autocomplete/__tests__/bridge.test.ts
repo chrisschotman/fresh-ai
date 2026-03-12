@@ -24,6 +24,30 @@ describe('shellEscape', () => {
   it('handles multiple single quotes', () => {
     expect(shellEscape("a'b'c")).toBe("'a'\\''b'\\''c'");
   });
+
+  it('handles backslashes', () => {
+    expect(shellEscape('C:\\Users\\test')).toBe("'C:\\Users\\test'");
+  });
+
+  it('handles paths with spaces', () => {
+    expect(shellEscape('/path/to/my file.ts')).toBe("'/path/to/my file.ts'");
+  });
+
+  it('handles unicode characters', () => {
+    expect(shellEscape('hello\u00e9world')).toBe("'hello\u00e9world'");
+  });
+
+  it('handles backticks and dollar signs', () => {
+    expect(shellEscape('`whoami` $USER')).toBe("'`whoami` $USER'");
+  });
+
+  it('handles semicolons and pipes', () => {
+    expect(shellEscape('foo; bar | baz')).toBe("'foo; bar | baz'");
+  });
+
+  it('throws on null bytes', () => {
+    expect(() => shellEscape('abc\0def')).toThrow('null byte');
+  });
 });
 
 describe('spawnCancellable', () => {
