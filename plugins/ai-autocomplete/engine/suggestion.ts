@@ -90,6 +90,73 @@ export function acceptSuggestion(): boolean {
   return true;
 }
 
+export function acceptWord(): boolean {
+  if (currentSuggestion === null) return false;
+
+  const { bufferId, position, text } = currentSuggestion;
+
+  const currentBuffer = editor.getActiveBufferId();
+  const currentOffset = editor.getCursorPosition();
+  if (currentBuffer !== bufferId || currentOffset !== position) {
+    clearGhostText(bufferId);
+    return false;
+  }
+
+  // Find the end of the next word
+  const wordMatch = /^\s*\S+/.exec(text);
+  if (wordMatch === null) {
+    // No word left — accept all
+    clearGhostText(bufferId);
+    editor.insertAtCursor(text);
+    return true;
+  }
+
+  const accepted = wordMatch[0];
+  const remaining = text.slice(accepted.length);
+
+  clearGhostText(bufferId);
+  editor.insertAtCursor(accepted);
+
+  if (remaining === '') {
+    return true;
+  }
+
+  // Update suggestion with remaining text at new cursor position
+  const newPosition = position + accepted.length;
+  void showGhostText(bufferId, newPosition, remaining);
+
+  return true;
+}
+
+export function acceptLine(): boolean {
+  if (currentSuggestion === null) return false;
+
+  const { bufferId, position, text } = currentSuggestion;
+
+  const currentBuffer = editor.getActiveBufferId();
+  const currentOffset = editor.getCursorPosition();
+  if (currentBuffer !== bufferId || currentOffset !== position) {
+    clearGhostText(bufferId);
+    return false;
+  }
+
+  const newlineIdx = text.indexOf('\n');
+  const accepted = newlineIdx === -1 ? text : text.slice(0, newlineIdx + 1);
+  const remaining = newlineIdx === -1 ? '' : text.slice(newlineIdx + 1);
+
+  clearGhostText(bufferId);
+  editor.insertAtCursor(accepted);
+
+  if (remaining === '') {
+    return true;
+  }
+
+  const newPosition = position + accepted.length;
+  void showGhostText(bufferId, newPosition, remaining);
+
+  return true;
+}
+
 export function hasSuggestion(): boolean {
   return currentSuggestion !== null;
 }

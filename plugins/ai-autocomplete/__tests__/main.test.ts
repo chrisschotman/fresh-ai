@@ -22,13 +22,15 @@ describe('main', () => {
     expect(editor.on).toHaveBeenCalledWith('cursor_moved', 'ai_autocomplete_cursor_moved');
   });
 
-  it('registers 6 commands', () => {
-    expect(editor.registerCommand).toHaveBeenCalledTimes(6);
+  it('registers 8 commands', () => {
+    expect(editor.registerCommand).toHaveBeenCalledTimes(8);
 
     const calls = vi.mocked(editor.registerCommand).mock.calls;
     const commandIds = calls.map((c) => c[0]);
 
     expect(commandIds).toContain('ai_accept_suggestion');
+    expect(commandIds).toContain('ai_accept_word');
+    expect(commandIds).toContain('ai_accept_line');
     expect(commandIds).toContain('ai_dismiss_suggestion');
     expect(commandIds).toContain('ai_toggle_autocomplete');
     expect(commandIds).toContain('ai_trigger_completion');

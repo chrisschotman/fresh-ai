@@ -69,6 +69,10 @@ declare var ai_autocomplete_cursor_moved: (() => void) | undefined;
 // eslint-disable-next-line no-var
 declare var ai_autocomplete_accept: (() => void) | undefined;
 // eslint-disable-next-line no-var
+declare var ai_autocomplete_accept_word: (() => void) | undefined;
+// eslint-disable-next-line no-var
+declare var ai_autocomplete_accept_line: (() => void) | undefined;
+// eslint-disable-next-line no-var
 declare var ai_autocomplete_dismiss: (() => Promise<void>) | undefined;
 // eslint-disable-next-line no-var
 declare var ai_autocomplete_toggle: (() => Promise<void>) | undefined;

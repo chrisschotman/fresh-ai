@@ -1,6 +1,6 @@
 import { loadConfig, getConfig, getModelForTask, setEnabled } from './config';
 import { onBufferModified, triggerCompletion, dismiss, shutdown } from './engine/autocomplete';
-import { acceptSuggestion, clearGhostText, hasSuggestion } from './engine/suggestion';
+import { acceptSuggestion, acceptWord, acceptLine, clearGhostText, hasSuggestion } from './engine/suggestion';
 import { indexBuffer, invalidateBuffer, initStore, clearStore, setContentHash } from './engine/rag';
 import { hashContent } from './engine/persistence';
 import { indexWorkspace } from './engine/workspace';
@@ -24,6 +24,18 @@ globalThis.ai_autocomplete_cursor_moved = function (): void {
 
 globalThis.ai_autocomplete_accept = function (): void {
   if (!acceptSuggestion()) {
+    editor.setStatus('AI: no suggestion to accept');
+  }
+};
+
+globalThis.ai_autocomplete_accept_word = function (): void {
+  if (!acceptWord()) {
+    editor.setStatus('AI: no suggestion to accept');
+  }
+};
+
+globalThis.ai_autocomplete_accept_line = function (): void {
+  if (!acceptLine()) {
     editor.setStatus('AI: no suggestion to accept');
   }
 };
@@ -120,6 +132,20 @@ async function init(): Promise<void> {
     'ai_accept_suggestion',
     'AI: Accept Suggestion',
     'ai_autocomplete_accept',
+    'insert',
+  );
+
+  editor.registerCommand(
+    'ai_accept_word',
+    'AI: Accept Word',
+    'ai_autocomplete_accept_word',
+    'insert',
+  );
+
+  editor.registerCommand(
+    'ai_accept_line',
+    'AI: Accept Line',
+    'ai_autocomplete_accept_line',
     'insert',
   );
 
