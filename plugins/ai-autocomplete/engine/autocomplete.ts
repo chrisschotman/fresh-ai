@@ -6,7 +6,7 @@ import { findRelevant } from './rag';
 import { getProviderByName, resolveProviderConfig } from '../providers/registry';
 import type { CompletionRequest } from '../providers/types';
 
-type State = 'idle' | 'debouncing' | 'requesting' | 'showing';
+type State = 'idle' | 'debouncing' | 'requesting' | 'showing' | 'error';
 
 let state: State = 'idle';
 let requestId = 0;
@@ -128,8 +128,8 @@ export async function triggerCompletion(): Promise<void> {
     if (thisRequestId !== requestId) return;
 
     if (result.exitCode !== 0) {
-      editor.setStatus('AI: request failed');
-      setState('idle');
+      editor.setStatus(`AI: request failed (exit ${result.exitCode.toString()})`);
+      setState('error');
       return;
     }
 
@@ -151,10 +151,12 @@ export async function triggerCompletion(): Promise<void> {
     await showGhostText(bufferId, cursorOffset, response.text);
     setState('showing');
     editor.setStatus('AI: suggestion ready (Tab to accept)');
-  } catch {
+  } catch (err: unknown) {
     activeProcessId = null;
     if (thisRequestId === requestId) {
-      setState('idle');
+      const msg = err instanceof Error ? err.message : 'unknown error';
+      editor.setStatus(`AI: completion error — ${msg}`);
+      setState('error');
     }
   }
 }

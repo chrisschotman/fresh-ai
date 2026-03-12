@@ -6,15 +6,24 @@ export async function embedBatch(texts: string[]): Promise<(number[] | null)[]> 
   if (texts.length === 0) return [];
 
   const modelConfig = getModelForTask('embedding');
-  if (modelConfig === null) return texts.map(() => null);
+  if (modelConfig === null) {
+    editor.setStatus('AI: no embedding model configured');
+    return texts.map(() => null);
+  }
 
   if (modelConfig.provider !== 'ollama') {
     const apiKey = getApiKeyForTask('embedding');
-    if (apiKey === '') return texts.map(() => null);
+    if (apiKey === '') {
+      editor.setStatus(`AI: no API key found in ${modelConfig.apiKeyEnv} for embeddings`);
+      return texts.map(() => null);
+    }
   }
 
   const provider = getEmbeddingProviderByName(modelConfig.provider);
-  if (provider === null) return texts.map(() => null);
+  if (provider === null) {
+    editor.setStatus(`AI: unknown embedding provider "${modelConfig.provider}"`);
+    return texts.map(() => null);
+  }
 
   const providerConfig = resolveProviderConfig(modelConfig, provider);
   if (providerConfig === null) return texts.map(() => null);
@@ -30,7 +39,10 @@ export async function embedBatch(texts: string[]): Promise<(number[] | null)[]> 
     const handle = await spawnCancellable(shellCommand);
     const result = await handle.wait();
 
-    if (result.exitCode !== 0) return texts.map(() => null);
+    if (result.exitCode !== 0) {
+      editor.setStatus('AI: embedding request failed');
+      return texts.map(() => null);
+    }
 
     const response = provider.parseResponse(result.stdout);
     if (response === null) return texts.map(() => null);

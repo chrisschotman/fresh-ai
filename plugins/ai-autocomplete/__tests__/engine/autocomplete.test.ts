@@ -171,8 +171,10 @@ describe('autocomplete', () => {
 
       await triggerCompletion();
 
-      expect(editor.setStatus).toHaveBeenCalledWith('AI: request failed');
-      expect(getState()).toBe('idle');
+      expect(editor.setStatus).toHaveBeenCalledWith(
+        expect.stringContaining('AI: request failed'),
+      );
+      expect(getState()).toBe('error');
     });
 
     it('handles null parse response', async () => {
@@ -232,7 +234,7 @@ describe('autocomplete', () => {
 
       await triggerCompletion();
 
-      expect(getState()).toBe('idle');
+      expect(getState()).toBe('error');
     });
   });
 

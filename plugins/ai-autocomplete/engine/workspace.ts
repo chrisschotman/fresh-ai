@@ -72,7 +72,9 @@ export async function indexFile(filePath: string): Promise<boolean> {
     await indexFileContent(filePath, text);
     setContentHash(filePath, hash);
     return true;
-  } catch {
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'unknown error';
+    editor.setStatus(`AI: indexing failed for ${filePath} — ${msg}`);
     return false;
   }
 }
