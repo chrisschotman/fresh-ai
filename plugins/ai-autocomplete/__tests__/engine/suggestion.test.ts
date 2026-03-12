@@ -6,6 +6,8 @@ describe('suggestion', () => {
   let acceptLine: typeof import('../../engine/suggestion').acceptLine;
   let hasSuggestion: typeof import('../../engine/suggestion').hasSuggestion;
   let getCurrentSuggestion: typeof import('../../engine/suggestion').getCurrentSuggestion;
+  let detectIndent: typeof import('../../engine/suggestion').detectIndent;
+  let reindentSuggestion: typeof import('../../engine/suggestion').reindentSuggestion;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -17,6 +19,8 @@ describe('suggestion', () => {
     acceptLine = mod.acceptLine;
     hasSuggestion = mod.hasSuggestion;
     getCurrentSuggestion = mod.getCurrentSuggestion;
+    detectIndent = mod.detectIndent;
+    reindentSuggestion = mod.reindentSuggestion;
   });
 
   describe('showGhostText', () => {
@@ -288,6 +292,54 @@ describe('suggestion', () => {
       vi.mocked(editor.getCursorPosition).mockReturnValue(99);
 
       expect(acceptLine()).toBe(false);
+    });
+  });
+
+  describe('detectIndent', () => {
+    it('detects spaces', () => {
+      expect(detectIndent('    const x = 1;')).toEqual({ char: ' ', width: 4 });
+    });
+
+    it('detects tabs', () => {
+      expect(detectIndent('\t\tconst x = 1;')).toEqual({ char: '\t', width: 2 });
+    });
+
+    it('returns zero for no indent', () => {
+      expect(detectIndent('const x = 1;')).toEqual({ char: ' ', width: 0 });
+    });
+
+    it('returns zero for empty string', () => {
+      expect(detectIndent('')).toEqual({ char: ' ', width: 0 });
+    });
+  });
+
+  describe('reindentSuggestion', () => {
+    it('returns single-line suggestions unchanged', () => {
+      expect(reindentSuggestion('return x;', '    if (true) {')).toBe('return x;');
+    });
+
+    it('re-indents multi-line from 2-space to 4-space context', () => {
+      const suggestion = 'firstLine\n  return x;\n  return y;';
+      const result = reindentSuggestion(suggestion, '    if (true) {');
+      expect(result).toBe('firstLine\n    return x;\n    return y;');
+    });
+
+    it('preserves relative indentation within suggestion', () => {
+      const suggestion = 'first\n  if (x) {\n    return y;\n  }';
+      const result = reindentSuggestion(suggestion, '      ');
+      expect(result).toBe('first\n      if (x) {\n        return y;\n      }');
+    });
+
+    it('handles empty lines in suggestion', () => {
+      const suggestion = 'first\n  line2\n\n  line4';
+      const result = reindentSuggestion(suggestion, '    ');
+      expect(result).toBe('first\n    line2\n\n    line4');
+    });
+
+    it('handles tab-indented context', () => {
+      const suggestion = 'first\n  return x;';
+      const result = reindentSuggestion(suggestion, '\t\tif (true) {');
+      expect(result).toBe('first\n\t\treturn x;');
     });
   });
 

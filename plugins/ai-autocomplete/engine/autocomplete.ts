@@ -148,7 +148,11 @@ export async function triggerCompletion(): Promise<void> {
       return;
     }
 
-    await showGhostText(bufferId, cursorOffset, response.text);
+    // Extract current line for indentation context
+    const lastNewline = context.prefix.lastIndexOf('\n');
+    const currentLine = lastNewline === -1 ? context.prefix : context.prefix.slice(lastNewline + 1);
+
+    await showGhostText(bufferId, cursorOffset, response.text, currentLine);
     setState('showing');
     editor.setStatus('AI: suggestion ready (Tab to accept)');
   } catch (err: unknown) {

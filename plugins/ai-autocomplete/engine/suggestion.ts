@@ -5,10 +5,50 @@ const GHOST_B = 100;
 
 let currentSuggestion: { bufferId: number; position: number; text: string } | null = null;
 
-export async function showGhostText(bufferId: number, position: number, text: string): Promise<void> {
+interface IndentInfo {
+  char: string;
+  width: number;
+}
+
+export function detectIndent(line: string): IndentInfo {
+  const match = /^(\s+)/.exec(line);
+  if (match === null) return { char: ' ', width: 0 };
+  const ws = match[1] ?? '';
+  if (ws.includes('\t')) return { char: '\t', width: ws.length };
+  return { char: ' ', width: ws.length };
+}
+
+export function reindentSuggestion(suggestion: string, contextLine: string): string {
+  const lines = suggestion.split('\n');
+  if (lines.length <= 1) return suggestion;
+
+  const contextIndent = detectIndent(contextLine);
+  const firstSuggestionLine = lines[1] ?? '';
+  const baseIndent = detectIndent(firstSuggestionLine);
+
+  // No re-indentation needed if suggestion has no indentation
+  if (baseIndent.width === 0 && contextIndent.width === 0) return suggestion;
+
+  // Re-indent lines 1+ relative to context
+  const result = [lines[0] ?? ''];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i] ?? '';
+    const lineIndent = detectIndent(line);
+    const relativeDepth = lineIndent.width - baseIndent.width;
+    const newDepth = Math.max(0, contextIndent.width + relativeDepth);
+    const stripped = line.trimStart();
+    const newIndent = contextIndent.char.repeat(newDepth);
+    result.push(stripped === '' ? '' : newIndent + stripped);
+  }
+
+  return result.join('\n');
+}
+
+export async function showGhostText(bufferId: number, position: number, text: string, contextLine?: string): Promise<void> {
   clearGhostText(bufferId);
 
-  const lines = text.split('\n');
+  const reindented = contextLine !== undefined ? reindentSuggestion(text, contextLine) : text;
+  const lines = reindented.split('\n');
   const firstLine = lines[0] ?? '';
 
   editor.addVirtualText(
@@ -62,7 +102,7 @@ export async function showGhostText(bufferId: number, position: number, text: st
 
   editor.refreshLines(bufferId);
 
-  currentSuggestion = { bufferId, position, text };
+  currentSuggestion = { bufferId, position, text: reindented };
 }
 
 export function clearGhostText(bufferId: number): void {
