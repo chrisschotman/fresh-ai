@@ -1,4 +1,5 @@
 import { loadConfig, getConfig, getModelForTask, setEnabled } from './config';
+import { formatStats, setVerbosity } from './engine/metrics';
 import { onBufferModified, triggerCompletion, dismiss, shutdown } from './engine/autocomplete';
 import { acceptSuggestion, acceptWord, acceptLine, clearGhostText, hasSuggestion } from './engine/suggestion';
 import { indexBuffer, invalidateBuffer, initStore, clearStore, setContentHash } from './engine/rag';
@@ -92,6 +93,10 @@ globalThis.ai_autocomplete_buffer_saved = async function (): Promise<void> {
   }
 };
 
+globalThis.ai_show_stats = function (): void {
+  editor.setStatus(formatStats());
+};
+
 globalThis.ai_clear_cache = function (): void {
   clearStore();
   editor.setStatus('AI: cache cleared');
@@ -120,6 +125,7 @@ async function init(): Promise<void> {
   await loadConfig();
 
   const config = getConfig();
+  setVerbosity(config.logVerbosity);
   const embeddingModel = getModelForTask('embedding');
 
   // Initialize persistent store
@@ -175,6 +181,7 @@ async function init(): Promise<void> {
 
   editor.registerCommand('ai_reload_config', 'AI: Reload Config', 'ai_autocomplete_reload_config');
 
+  editor.registerCommand('ai_show_stats', 'AI: Show Stats', 'ai_show_stats');
   editor.registerCommand('ai_clear_cache', 'AI: Clear Cache', 'ai_clear_cache');
 
   editor.registerCommand(

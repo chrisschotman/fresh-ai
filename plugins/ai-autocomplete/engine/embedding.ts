@@ -1,6 +1,7 @@
 import { spawnCancellable } from '../bridge';
 import { getModelForTask, getApiKeyForTask } from '../config';
 import { getEmbeddingProviderByName, resolveProviderConfig } from '../providers/registry';
+import { recordEmbedding } from './metrics';
 
 export async function embedBatch(texts: string[]): Promise<(number[] | null)[]> {
   if (texts.length === 0) return [];
@@ -35,9 +36,11 @@ export async function embedBatch(texts: string[]): Promise<(number[] | null)[]> 
 
   const shellCommand = provider.buildShellCommand(request, providerConfig);
 
+  const start = Date.now();
   try {
     const handle = await spawnCancellable(shellCommand);
     const result = await handle.wait();
+    recordEmbedding(Date.now() - start);
 
     if (result.exitCode !== 0) {
       editor.setStatus('AI: embedding request failed');
@@ -50,6 +53,7 @@ export async function embedBatch(texts: string[]): Promise<(number[] | null)[]> 
     // Align response with input — pad with nulls if needed
     return texts.map((_, i) => response.embeddings[i] ?? null);
   } catch {
+    recordEmbedding(Date.now() - start);
     return texts.map(() => null);
   }
 }

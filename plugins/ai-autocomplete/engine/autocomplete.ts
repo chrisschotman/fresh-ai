@@ -5,6 +5,7 @@ import { showGhostText, clearGhostText, hasSuggestion } from './suggestion';
 import { findRelevant } from './rag';
 import { getProviderByName, resolveProviderConfig } from '../providers/registry';
 import type { CompletionRequest } from '../providers/types';
+import { recordCompletion, recordRagSearch } from './metrics';
 
 type State = 'idle' | 'debouncing' | 'requesting' | 'showing' | 'error';
 
@@ -84,7 +85,9 @@ export async function triggerCompletion(): Promise<void> {
   // Gather RAG context (non-blocking: falls back gracefully)
   let ragContext: string | undefined;
   try {
+    const ragStart = Date.now();
     const relevantChunks = await findRelevant(context.prefix, 3);
+    recordRagSearch(Date.now() - ragStart);
     if (relevantChunks.length > 0) {
       ragContext = relevantChunks
         .map((c) => `// ${c.filePath}:${c.startLine.toString()}-${c.endLine.toString()}\n${c.content}`)
@@ -116,6 +119,7 @@ export async function triggerCompletion(): Promise<void> {
 
   setState('requesting');
   editor.setStatus('AI: thinking...');
+  const completionStart = Date.now();
 
   try {
     const handle = await spawnCancellable(shellCommand);
@@ -127,7 +131,10 @@ export async function triggerCompletion(): Promise<void> {
     // Check if this request is still current
     if (thisRequestId !== requestId) return;
 
+    const completionMs = Date.now() - completionStart;
+
     if (result.exitCode !== 0) {
+      recordCompletion(completionMs, false);
       editor.setStatus(`AI: request failed (exit ${result.exitCode.toString()})`);
       setState('error');
       return;
@@ -135,10 +142,13 @@ export async function triggerCompletion(): Promise<void> {
 
     const response = provider.parseResponse(result.stdout);
     if (response === null || response.text.trim() === '') {
+      recordCompletion(completionMs, false);
       editor.setStatus('AI: no suggestion');
       setState('idle');
       return;
     }
+
+    recordCompletion(completionMs, true);
 
     // Verify cursor hasn't moved
     const currentBufferId = editor.getActiveBufferId();

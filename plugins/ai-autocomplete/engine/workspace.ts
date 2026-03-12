@@ -1,6 +1,7 @@
 import { shellEscape, spawnCancellable } from '../bridge';
 import { hashContent } from './persistence';
 import { indexFileContent, getContentHash, setContentHash } from './rag';
+import { recordIndexing } from './metrics';
 import type { RagConfig } from '../config';
 
 let cachedProjectRoot: string | null | undefined;
@@ -90,6 +91,7 @@ export async function indexWorkspace(config: RagConfig, disabledExtensions: stri
 
   editor.setStatus(`AI: indexing ${String(files.length)} files...`);
 
+  const indexStart = Date.now();
   let indexed = 0;
   for (let i = 0; i < files.length; i += config.indexBatchSize) {
     const batch = files.slice(i, i + config.indexBatchSize);
@@ -101,6 +103,7 @@ export async function indexWorkspace(config: RagConfig, disabledExtensions: stri
     }
   }
 
+  recordIndexing(Date.now() - indexStart, indexed);
   editor.setStatus(`AI: indexed ${String(indexed)} files`);
 }
 

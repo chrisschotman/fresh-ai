@@ -22,11 +22,14 @@ export interface RagConfig {
   saveDebounceSec: number;
 }
 
+export type LogVerbosity = 'off' | 'minimal' | 'verbose';
+
 export interface AutocompleteConfig {
   enabled: boolean;
   debounceMs: number;
   maxContextLines: number;
   disabledExtensions: string[];
+  logVerbosity: LogVerbosity;
   models: Record<string, ModelConfig>;
   rag: RagConfig;
 }
@@ -97,11 +100,14 @@ const DEFAULT_RAG: RagConfig = {
   saveDebounceSec: 30,
 };
 
+const VALID_VERBOSITY: LogVerbosity[] = ['off', 'minimal', 'verbose'];
+
 const DEFAULTS: AutocompleteConfig = {
   enabled: true,
   debounceMs: 300,
   maxContextLines: 50,
   disabledExtensions: ['.md', '.txt'],
+  logVerbosity: 'off',
   models: cloneModels(DEFAULT_MODELS),
   rag: { ...DEFAULT_RAG },
 };
@@ -109,6 +115,7 @@ const DEFAULTS: AutocompleteConfig = {
 let currentConfig: AutocompleteConfig = {
   ...DEFAULTS,
   models: cloneModels(DEFAULT_MODELS),
+  rag: { ...DEFAULT_RAG },
 };
 
 export function getConfig(): AutocompleteConfig {
@@ -256,6 +263,8 @@ export async function loadConfig(): Promise<AutocompleteConfig> {
         currentConfig.maxContextLines = parsed['maxContextLines'];
       if (Array.isArray(parsed['disabledExtensions']))
         currentConfig.disabledExtensions = parsed['disabledExtensions'] as string[];
+      if (typeof parsed['logVerbosity'] === 'string' && VALID_VERBOSITY.includes(parsed['logVerbosity'] as LogVerbosity))
+        currentConfig.logVerbosity = parsed['logVerbosity'] as LogVerbosity;
 
       // RAG config
       if (typeof parsed['rag'] === 'object' && parsed['rag'] !== null) {

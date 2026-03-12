@@ -83,6 +83,8 @@ declare var ai_autocomplete_reload_config: (() => Promise<void>) | undefined;
 // eslint-disable-next-line no-var
 declare var ai_autocomplete_buffer_saved: (() => Promise<void>) | undefined;
 // eslint-disable-next-line no-var
+declare var ai_show_stats: (() => void) | undefined;
+// eslint-disable-next-line no-var
 declare var ai_clear_cache: (() => void) | undefined;
 // eslint-disable-next-line no-var
 declare var ai_reindex_workspace: (() => Promise<void>) | undefined;

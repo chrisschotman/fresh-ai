@@ -22,8 +22,8 @@ describe('main', () => {
     expect(editor.on).toHaveBeenCalledWith('cursor_moved', 'ai_autocomplete_cursor_moved');
   });
 
-  it('registers 9 commands', () => {
-    expect(editor.registerCommand).toHaveBeenCalledTimes(9);
+  it('registers 10 commands', () => {
+    expect(editor.registerCommand).toHaveBeenCalledTimes(10);
 
     const calls = vi.mocked(editor.registerCommand).mock.calls;
     const commandIds = calls.map((c) => c[0]);
@@ -35,6 +35,7 @@ describe('main', () => {
     expect(commandIds).toContain('ai_toggle_autocomplete');
     expect(commandIds).toContain('ai_trigger_completion');
     expect(commandIds).toContain('ai_reload_config');
+    expect(commandIds).toContain('ai_show_stats');
     expect(commandIds).toContain('ai_clear_cache');
     expect(commandIds).toContain('ai_reindex_workspace');
   });
